@@ -1,0 +1,70 @@
+"""Generate confusion matrix and feature importance charts, saved to reports/."""
+
+import pathlib
+import pickle
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.model_selection import train_test_split
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from train import FEATURES, load_and_prepare
+
+REPORTS_DIR = pathlib.Path(__file__).parent.parent / "reports"
+MODEL_PATH = pathlib.Path(__file__).parent.parent / "models" / "surge_model.pkl"
+
+
+def _load_model():
+    with open(MODEL_PATH, "rb") as f:
+        return pickle.load(f)
+
+
+def plot_confusion_matrix(model, X_test: pd.DataFrame, y_test: pd.Series) -> None:
+    """Save a confusion matrix PNG to reports/confusion_matrix.png."""
+    preds = model.predict(X_test)
+    cm = confusion_matrix(y_test, preds)
+    fig, ax = plt.subplots(figsize=(5, 4))
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["No Surge", "Surge"])
+    disp.plot(ax=ax, colorbar=False, cmap="Blues")
+    ax.set_title("Confusion Matrix")
+    fig.tight_layout()
+    out = REPORTS_DIR / "confusion_matrix.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Saved → {out}")
+
+
+def plot_feature_importance(model, feature_names: list[str]) -> None:
+    """Save a horizontal bar chart of XGBoost feature importances to reports/."""
+    importances = model.feature_importances_
+    indices = np.argsort(importances)
+    sorted_names = [feature_names[i] for i in indices]
+    sorted_vals = importances[indices]
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.barh(sorted_names, sorted_vals, color="steelblue")
+    ax.set_xlabel("Importance (gain)")
+    ax.set_title("Feature Importance")
+    fig.tight_layout()
+    out = REPORTS_DIR / "feature_importance.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Saved → {out}")
+
+
+def evaluate() -> None:
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    model = _load_model()
+
+    X, y = load_and_prepare()
+    _, X_test, _, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+    plot_confusion_matrix(model, X_test, y_test)
+    plot_feature_importance(model, list(X_test.columns))
+
+
+if __name__ == "__main__":
+    evaluate()
