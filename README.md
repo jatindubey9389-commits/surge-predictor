@@ -40,6 +40,25 @@ Engineers features, trains XGBoost, prints accuracy + F1, saves model to `models
 | Split | 80/20 train/test, stratified |
 | Metrics | Accuracy, F1 score |
 
+## Results
+
+The XGBoost model was evaluated on a held-out 20% test split (stratified).
+
+| Metric   | Score  |
+|----------|--------|
+| Accuracy | **98.02%** |
+| F1 Score | **96.31%** |
+
+### Confusion Matrix
+
+![Confusion Matrix](reports/confusion_matrix.png)
+
+### Feature Importance
+
+![Feature Importance](reports/feature_importance.png)
+
+`trip_duration_minutes` and `trip_distance` are the strongest predictors of surge fares, followed by time-of-day features (`hour`, `is_rush_hour`).
+
 ## Project structure
 
 ```
@@ -48,10 +67,13 @@ surge-predictor/
 ├── models/          # Saved .pkl models (git-ignored)
 ├── notebooks/       # Jupyter EDA notebooks
 │   └── 01_eda.ipynb
+├── reports/         # Generated charts (confusion matrix, feature importance)
 ├── src/
 │   ├── ingest.py    # Download + inspect raw data
 │   ├── features.py  # Feature engineering
-│   └── train.py     # Model training + evaluation
+│   ├── train.py     # Model training + evaluation
+│   ├── evaluate.py  # Generate reports/ charts
+│   └── predict.py   # Single-trip surge probability inference
 ├── tests/           # pytest unit tests
 ├── requirements.txt
 └── CLAUDE.md
