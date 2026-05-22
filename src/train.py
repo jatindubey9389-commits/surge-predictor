@@ -18,6 +18,10 @@ MODEL_PATH = MODEL_DIR / "surge_model.pkl"
 FEATURES = [
     "hour",
     "day_of_week",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
     "is_weekend",
     "is_rush_hour",
     "trip_duration_minutes",

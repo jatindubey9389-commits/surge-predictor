@@ -28,6 +28,12 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out["is_weekend"] = (out["day_of_week"] >= 5).astype(int)
     out["is_rush_hour"] = out["hour"].isin(RUSH_HOURS).astype(int)
 
+    # Cyclical encoding so model sees 23→0 and Sun→Mon as adjacent
+    out["hour_sin"] = np.sin(2 * np.pi * out["hour"] / 24)
+    out["hour_cos"] = np.cos(2 * np.pi * out["hour"] / 24)
+    out["dow_sin"] = np.sin(2 * np.pi * out["day_of_week"] / 7)
+    out["dow_cos"] = np.cos(2 * np.pi * out["day_of_week"] / 7)
+
     # Location
     out["pickup_zone"] = out["PULocationID"].astype("category")
 

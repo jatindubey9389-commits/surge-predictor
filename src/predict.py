@@ -3,6 +3,7 @@
 import pathlib
 import pickle
 
+import numpy as np
 import pandas as pd
 
 from features import RUSH_HOURS
@@ -49,6 +50,10 @@ def predict_surge_probability(
             {
                 "hour": pickup_hour,
                 "day_of_week": day_of_week,
+                "hour_sin": np.sin(2 * np.pi * pickup_hour / 24),
+                "hour_cos": np.cos(2 * np.pi * pickup_hour / 24),
+                "dow_sin": np.sin(2 * np.pi * day_of_week / 7),
+                "dow_cos": np.cos(2 * np.pi * day_of_week / 7),
                 "is_weekend": is_weekend,
                 "is_rush_hour": is_rush_hour,
                 "trip_duration_minutes": trip_duration_minutes,
