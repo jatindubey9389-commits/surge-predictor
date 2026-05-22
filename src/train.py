@@ -4,7 +4,7 @@ import pathlib
 import pickle
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 from sklearn.metrics import accuracy_score, f1_score
 from xgboost import XGBClassifier
 
@@ -86,7 +86,12 @@ def train() -> None:
         n_jobs=-1,
     )
 
-    print("Training XGBoost …")
+    print("Running 5-fold cross-validation …")
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_f1 = cross_val_score(model, X, y, cv=cv, scoring="f1", n_jobs=-1)
+    print(f"CV F1:  {cv_f1.mean():.4f} ± {cv_f1.std():.4f}")
+
+    print("Training XGBoost on full train split …")
     model.fit(X_train, y_train)
 
     preds = model.predict(X_test)
