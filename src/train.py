@@ -69,13 +69,18 @@ def train() -> None:
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    neg = int((y_train == 0).sum())
+    pos = int((y_train == 1).sum())
+    scale_pos_weight = neg / pos
+    print(f"Class balance — neg: {neg:,}  pos: {pos:,}  scale_pos_weight: {scale_pos_weight:.2f}")
+
     model = XGBClassifier(
         n_estimators=200,
         max_depth=6,
         learning_rate=0.1,
         subsample=0.8,
         colsample_bytree=0.8,
-        use_label_encoder=False,
+        scale_pos_weight=scale_pos_weight,
         eval_metric="logloss",
         random_state=42,
         n_jobs=-1,
