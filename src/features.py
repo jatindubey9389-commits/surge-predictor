@@ -46,6 +46,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out = out[out["trip_duration_minutes"] > 0]
     out = out[out["fare_amount"] > 0]
 
+    # Per-zone median fare captures neighbourhood-level pricing pressure
+    out["zone_median_fare"] = out.groupby("PULocationID")["fare_amount"].transform("median")
+
     # Surge label: 1 if fare > 1.5× median
     median_fare = out["fare_amount"].median()
     out["surge_label"] = (out["fare_amount"] > 1.5 * median_fare).astype(int)

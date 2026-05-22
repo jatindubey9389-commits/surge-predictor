@@ -9,8 +9,10 @@ import pandas as pd
 from features import RUSH_HOURS
 
 MODEL_PATH = pathlib.Path(__file__).parent.parent / "models" / "surge_model.pkl"
+ZONE_FARE_MAP_PATH = pathlib.Path(__file__).parent.parent / "models" / "zone_fare_map.pkl"
 
 _model = None
+_zone_fare_map = None
 
 
 def _get_model():
@@ -19,6 +21,14 @@ def _get_model():
         with open(MODEL_PATH, "rb") as f:
             _model = pickle.load(f)
     return _model
+
+
+def _get_zone_fare_map() -> dict:
+    global _zone_fare_map
+    if _zone_fare_map is None:
+        with open(ZONE_FARE_MAP_PATH, "rb") as f:
+            _zone_fare_map = pickle.load(f)
+    return _zone_fare_map
 
 
 def predict_surge_probability(
@@ -63,6 +73,11 @@ def predict_surge_probability(
             }
         ]
     )
+
+    zone_fare_map = _get_zone_fare_map()
+    values = list(zone_fare_map.values())
+    fallback = float(np.median(values)) if values else 12.5
+    row["zone_median_fare"] = float(zone_fare_map.get(pickup_zone, fallback))
 
     model = _get_model()
     prob: float = model.predict_proba(row)[0][1]

@@ -14,6 +14,7 @@ from features import build_features
 RAW_PATH = pathlib.Path(__file__).parent.parent / "data" / "raw.parquet"
 MODEL_DIR = pathlib.Path(__file__).parent.parent / "models"
 MODEL_PATH = MODEL_DIR / "surge_model.pkl"
+ZONE_FARE_MAP_PATH = MODEL_DIR / "zone_fare_map.pkl"
 
 FEATURES = [
     "hour",
@@ -28,14 +29,25 @@ FEATURES = [
     "pickup_zone",
     "passenger_count",
     "trip_distance",
+    "zone_median_fare",
 ]
 
 
 def load_and_prepare() -> tuple[pd.DataFrame, pd.Series]:
-    """Load raw data, engineer features, return X and y."""
+    """Load raw data, engineer features, return X and y.
+
+    As a side effect, writes zone_fare_map.pkl so inference can look up
+    per-zone median fares without the training dataset.
+    """
     print("Loading data …")
     df = pd.read_parquet(RAW_PATH)
     df = build_features(df)
+
+    # Persist zone-level fare lookup for inference
+    zone_fare_map: dict = df.groupby("PULocationID")["fare_amount"].median().to_dict()
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    with open(ZONE_FARE_MAP_PATH, "wb") as f:
+        pickle.dump(zone_fare_map, f)
 
     available = [c for c in FEATURES if c in df.columns]
     X = df[available].copy()
