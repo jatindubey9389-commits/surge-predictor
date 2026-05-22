@@ -7,7 +7,12 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    PrecisionRecallDisplay,
+    average_precision_score,
+    confusion_matrix,
+)
 from sklearn.model_selection import train_test_split
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
@@ -55,6 +60,26 @@ def plot_feature_importance(model, feature_names: list[str]) -> None:
     print(f"Saved → {out}")
 
 
+def plot_precision_recall(model, X_test: pd.DataFrame, y_test: pd.Series) -> None:
+    """Save a precision-recall curve to reports/precision_recall.png.
+
+    More informative than accuracy for imbalanced surge/no-surge classes;
+    average precision (area under the PR curve) is the headline metric.
+    """
+    proba = model.predict_proba(X_test)[:, 1]
+    ap = average_precision_score(y_test, proba)
+    fig, ax = plt.subplots(figsize=(5, 4))
+    PrecisionRecallDisplay.from_predictions(
+        y_test, proba, ax=ax, name=f"AP = {ap:.3f}"
+    )
+    ax.set_title("Precision–Recall Curve")
+    fig.tight_layout()
+    out = REPORTS_DIR / "precision_recall.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Saved → {out}")
+
+
 def evaluate() -> None:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     model = _load_model()
@@ -64,6 +89,7 @@ def evaluate() -> None:
 
     plot_confusion_matrix(model, X_test, y_test)
     plot_feature_importance(model, list(X_test.columns))
+    plot_precision_recall(model, X_test, y_test)
 
 
 if __name__ == "__main__":
