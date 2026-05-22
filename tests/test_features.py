@@ -13,10 +13,15 @@ from features import build_features
 EXPECTED_COLUMNS = [
     "hour",
     "day_of_week",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
     "is_weekend",
     "is_rush_hour",
     "pickup_zone",
     "trip_duration_minutes",
+    "zone_median_fare",
     "surge_label",
 ]
 
@@ -79,3 +84,30 @@ def test_is_weekend_values():
 def test_is_rush_hour_values():
     df = build_features(_make_raw())
     assert set(df["is_rush_hour"].unique()) <= {0, 1}
+
+
+def test_cyclical_features_in_unit_range():
+    df = build_features(_make_raw())
+    for col in ["hour_sin", "hour_cos", "dow_sin", "dow_cos"]:
+        assert col in df.columns, f"Missing column: {col}"
+        assert df[col].between(-1.0, 1.0).all(), f"{col} has values outside [-1, 1]"
+
+
+def test_cyclical_hour_sin_cos_identity():
+    df = build_features(_make_raw())
+    reconstructed = (df["hour_sin"] ** 2 + df["hour_cos"] ** 2).round(6)
+    assert (reconstructed == 1.0).all(), "sin²+cos² must equal 1 for hour"
+
+
+def test_zone_median_fare_positive():
+    df = build_features(_make_raw())
+    assert "zone_median_fare" in df.columns
+    assert (df["zone_median_fare"] > 0).all()
+
+
+def test_zone_median_fare_consistent_per_zone():
+    df = build_features(_make_raw(n=40))
+    for zone_id, group in df.groupby("PULocationID"):
+        assert group["zone_median_fare"].nunique() == 1, (
+            f"zone_median_fare is not uniform within zone {zone_id}"
+        )
