@@ -10,8 +10,10 @@ import pandas as pd
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     PrecisionRecallDisplay,
+    RocCurveDisplay,
     average_precision_score,
     confusion_matrix,
+    roc_auc_score,
 )
 from sklearn.model_selection import train_test_split
 
@@ -80,6 +82,25 @@ def plot_precision_recall(model, X_test: pd.DataFrame, y_test: pd.Series) -> Non
     print(f"Saved → {out}")
 
 
+def plot_roc_curve(model, X_test: pd.DataFrame, y_test: pd.Series) -> None:
+    """Save a ROC curve PNG to reports/roc_curve.png.
+
+    AUC-ROC complements the PR curve: the latter is more informative under
+    class imbalance, while AUC-ROC gives an imbalance-agnostic view of
+    ranking quality.
+    """
+    proba = model.predict_proba(X_test)[:, 1]
+    auc = roc_auc_score(y_test, proba)
+    fig, ax = plt.subplots(figsize=(5, 4))
+    RocCurveDisplay.from_predictions(y_test, proba, ax=ax, name=f"AUC = {auc:.3f}")
+    ax.set_title("ROC Curve")
+    fig.tight_layout()
+    out = REPORTS_DIR / "roc_curve.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Saved → {out}")
+
+
 def evaluate() -> None:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     model = _load_model()
@@ -90,6 +111,7 @@ def evaluate() -> None:
     plot_confusion_matrix(model, X_test, y_test)
     plot_feature_importance(model, list(X_test.columns))
     plot_precision_recall(model, X_test, y_test)
+    plot_roc_curve(model, X_test, y_test)
 
 
 if __name__ == "__main__":
