@@ -21,6 +21,7 @@ EXPECTED_COLUMNS = [
     "is_rush_hour",
     "pickup_zone",
     "trip_duration_minutes",
+    "trip_speed_mph",
     "zone_median_fare",
     "surge_label",
 ]
@@ -103,6 +104,13 @@ def test_zone_median_fare_positive():
     df = build_features(_make_raw())
     assert "zone_median_fare" in df.columns
     assert (df["zone_median_fare"] > 0).all()
+
+
+def test_trip_speed_mph_positive_and_bounded():
+    df = build_features(_make_raw())
+    assert "trip_speed_mph" in df.columns
+    assert (df["trip_speed_mph"] > 0).all()
+    assert (df["trip_speed_mph"] <= 80.0).all()
 
 
 def test_zone_median_fare_consistent_per_zone():

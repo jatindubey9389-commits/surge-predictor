@@ -46,6 +46,11 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out = out[out["trip_duration_minutes"] > 0]
     out = out[out["fare_amount"] > 0]
 
+    # Speed: low speed signals heavy traffic, which correlates with surge demand
+    out["trip_speed_mph"] = (
+        out["trip_distance"] / (out["trip_duration_minutes"] / 60)
+    ).clip(upper=80.0)
+
     # Per-zone median fare captures neighbourhood-level pricing pressure
     out["zone_median_fare"] = out.groupby("PULocationID")["fare_amount"].transform("median")
 

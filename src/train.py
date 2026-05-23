@@ -29,6 +29,7 @@ FEATURES = [
     "pickup_zone",
     "passenger_count",
     "trip_distance",
+    "trip_speed_mph",
     "zone_median_fare",
 ]
 

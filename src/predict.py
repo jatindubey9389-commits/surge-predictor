@@ -70,6 +70,9 @@ def predict_surge_probability(
                 "pickup_zone": pickup_zone,
                 "passenger_count": passenger_count,
                 "trip_distance": trip_distance,
+                "trip_speed_mph": min(
+                    trip_distance / max(trip_duration_minutes / 60, 1e-6), 80.0
+                ),
             }
         ]
     )
