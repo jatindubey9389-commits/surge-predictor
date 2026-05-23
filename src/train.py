@@ -25,6 +25,8 @@ FEATURES = [
     "dow_cos",
     "is_weekend",
     "is_rush_hour",
+    "month",
+    "is_peak_season",
     "trip_duration_minutes",
     "pickup_zone",
     "passenger_count",

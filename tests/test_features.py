@@ -19,6 +19,8 @@ EXPECTED_COLUMNS = [
     "dow_cos",
     "is_weekend",
     "is_rush_hour",
+    "month",
+    "is_peak_season",
     "pickup_zone",
     "trip_duration_minutes",
     "trip_speed_mph",
@@ -104,6 +106,33 @@ def test_zone_median_fare_positive():
     df = build_features(_make_raw())
     assert "zone_median_fare" in df.columns
     assert (df["zone_median_fare"] > 0).all()
+
+
+def test_month_in_valid_range():
+    df = build_features(_make_raw())
+    assert "month" in df.columns
+    assert df["month"].between(1, 12).all()
+
+
+def test_is_peak_season_binary():
+    df = build_features(_make_raw())
+    assert "is_peak_season" in df.columns
+    assert set(df["is_peak_season"].unique()) <= {0, 1}
+
+
+def test_peak_season_flag_set_for_summer():
+    base = pd.Timestamp("2024-07-15 10:00:00")  # July → peak
+    n = 5
+    raw = pd.DataFrame({
+        "tpep_pickup_datetime": [base + pd.Timedelta(minutes=i * 10) for i in range(n)],
+        "tpep_dropoff_datetime": [base + pd.Timedelta(minutes=i * 10 + 15) for i in range(n)],
+        "fare_amount": [float(8 + i) for i in range(n)],
+        "PULocationID": [132] * n,
+        "passenger_count": [1] * n,
+        "trip_distance": [2.0] * n,
+    })
+    df = build_features(raw)
+    assert (df["is_peak_season"] == 1).all()
 
 
 def test_trip_speed_mph_positive_and_bounded():

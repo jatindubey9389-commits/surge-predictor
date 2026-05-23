@@ -38,6 +38,7 @@ def predict_surge_probability(
     trip_distance: float,
     passenger_count: int = 1,
     trip_duration_minutes: float = 10.0,
+    month: int = 1,
 ) -> float:
     """Return the probability that a trip is a surge fare.
 
@@ -48,12 +49,14 @@ def predict_surge_probability(
         trip_distance: Trip distance in miles.
         passenger_count: Number of passengers (default 1).
         trip_duration_minutes: Estimated trip duration in minutes (default 10).
+        month: Calendar month (1–12, default 1).
 
     Returns:
         Float in [0, 1] — probability that surge_label == 1.
     """
     is_weekend = int(day_of_week >= 5)
     is_rush_hour = int(pickup_hour in RUSH_HOURS)
+    is_peak_season = int(month in {6, 7, 8, 12})
 
     row = pd.DataFrame(
         [
@@ -66,6 +69,8 @@ def predict_surge_probability(
                 "dow_cos": np.cos(2 * np.pi * day_of_week / 7),
                 "is_weekend": is_weekend,
                 "is_rush_hour": is_rush_hour,
+                "month": month,
+                "is_peak_season": is_peak_season,
                 "trip_duration_minutes": trip_duration_minutes,
                 "pickup_zone": pickup_zone,
                 "passenger_count": passenger_count,

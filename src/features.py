@@ -27,6 +27,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out["day_of_week"] = pickup.dt.dayofweek          # 0=Mon … 6=Sun
     out["is_weekend"] = (out["day_of_week"] >= 5).astype(int)
     out["is_rush_hour"] = out["hour"].isin(RUSH_HOURS).astype(int)
+    out["month"] = pickup.dt.month
+    # Summer (Jun-Aug) and December see peak NYC ridership demand
+    out["is_peak_season"] = out["month"].isin({6, 7, 8, 12}).astype(int)
 
     # Cyclical encoding so model sees 23→0 and Sun→Mon as adjacent
     out["hour_sin"] = np.sin(2 * np.pi * out["hour"] / 24)
