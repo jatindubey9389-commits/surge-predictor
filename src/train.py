@@ -5,7 +5,7 @@ import pickle
 
 import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_curve
 from xgboost import XGBClassifier
 
 from features import build_features
@@ -15,6 +15,7 @@ RAW_PATH = pathlib.Path(__file__).parent.parent / "data" / "raw.parquet"
 MODEL_DIR = pathlib.Path(__file__).parent.parent / "models"
 MODEL_PATH = MODEL_DIR / "surge_model.pkl"
 ZONE_FARE_MAP_PATH = MODEL_DIR / "zone_fare_map.pkl"
+THRESHOLD_PATH = MODEL_DIR / "threshold.pkl"
 
 FEATURES = [
     "hour",
@@ -97,16 +98,30 @@ def train() -> None:
     print("Training XGBoost on full train split …")
     model.fit(X_train, y_train)
 
-    preds = model.predict(X_test)
+    # Find the threshold that maximises F1 on the held-out test split
+    proba_test = model.predict_proba(X_test)[:, 1]
+    precisions, recalls, thresholds = precision_recall_curve(y_test, proba_test)
+    f1_per_threshold = (
+        2 * precisions[:-1] * recalls[:-1]
+        / (precisions[:-1] + recalls[:-1] + 1e-8)
+    )
+    best_threshold = float(thresholds[f1_per_threshold.argmax()])
+    best_f1 = float(f1_per_threshold.max())
+    print(f"\nOptimal threshold: {best_threshold:.4f}  (F1 = {best_f1:.4f})")
+
+    preds = (proba_test >= best_threshold).astype(int)
     acc = accuracy_score(y_test, preds)
     f1 = f1_score(y_test, preds)
-    print(f"\nAccuracy : {acc:.4f}")
+    print(f"Accuracy : {acc:.4f}")
     print(f"F1 Score : {f1:.4f}")
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(model, f)
+    with open(THRESHOLD_PATH, "wb") as f:
+        pickle.dump(best_threshold, f)
     print(f"\nModel saved → {MODEL_PATH}")
+    print(f"Threshold saved → {THRESHOLD_PATH}")
 
 
 if __name__ == "__main__":

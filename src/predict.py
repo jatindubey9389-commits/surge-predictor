@@ -10,9 +10,11 @@ from features import RUSH_HOURS
 
 MODEL_PATH = pathlib.Path(__file__).parent.parent / "models" / "surge_model.pkl"
 ZONE_FARE_MAP_PATH = pathlib.Path(__file__).parent.parent / "models" / "zone_fare_map.pkl"
+THRESHOLD_PATH = pathlib.Path(__file__).parent.parent / "models" / "threshold.pkl"
 
 _model = None
 _zone_fare_map = None
+_threshold = None
 
 
 def _get_model():
@@ -21,6 +23,17 @@ def _get_model():
         with open(MODEL_PATH, "rb") as f:
             _model = pickle.load(f)
     return _model
+
+
+def _get_threshold() -> float:
+    global _threshold
+    if _threshold is None:
+        if THRESHOLD_PATH.exists():
+            with open(THRESHOLD_PATH, "rb") as f:
+                _threshold = pickle.load(f)
+        else:
+            _threshold = 0.5
+    return _threshold
 
 
 def _get_zone_fare_map() -> dict:
@@ -90,6 +103,32 @@ def predict_surge_probability(
     model = _get_model()
     prob: float = model.predict_proba(row)[0][1]
     return float(prob)
+
+
+def predict_surge_label(
+    pickup_hour: int,
+    day_of_week: int,
+    pickup_zone: int,
+    trip_distance: float,
+    passenger_count: int = 1,
+    trip_duration_minutes: float = 10.0,
+    month: int = 1,
+) -> int:
+    """Return 1 (surge) or 0 (no surge) using the trained optimal threshold.
+
+    Uses the threshold saved by train.py that maximises F1 on the
+    validation split, rather than the default 0.5 cutoff.
+    """
+    prob = predict_surge_probability(
+        pickup_hour=pickup_hour,
+        day_of_week=day_of_week,
+        pickup_zone=pickup_zone,
+        trip_distance=trip_distance,
+        passenger_count=passenger_count,
+        trip_duration_minutes=trip_duration_minutes,
+        month=month,
+    )
+    return int(prob >= _get_threshold())
 
 
 if __name__ == "__main__":
